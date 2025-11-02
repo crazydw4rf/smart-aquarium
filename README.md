@@ -9,8 +9,8 @@ Kemudian copy atau rename file `src/secret.example.h` ke `src/secret.h` dan edit
 
 ## Notes
 
-- Hanya support board ESP32.
+- Hanya support chip ESP32.
 
 ## Todo
 
-- [ ] Support board ESP8266
+- [ ] Support chip ESP8266
