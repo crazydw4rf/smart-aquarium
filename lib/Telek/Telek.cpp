@@ -1,12 +1,12 @@
 #include <ArduinoJson.h>
 
-#include "AquaBot.h"
+#include "Telek.h"
 
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
-// gak usah pake PROGMEM di esp32
+// root CA untuk domain telegram bot API api.telegram.org
 const char Go_Daddy_G2[] = R"CERT(
 -----BEGIN CERTIFICATE-----
 MIIDxTCCAq2gAwIBAgIBADANBgkqhkiG9w0BAQsFADCBgzELMAkGA1UEBhMCVVMx
@@ -41,9 +41,9 @@ const char *SEND_MESSAGE = "sendMessage";
 const char *GET_UPDATES = "getUpdates";
 } // namespace ApiMethods
 
-AquaBot::~AquaBot() { void(0); }
+Telek::~Telek() { void(0); }
 
-AquaBot::AquaBot(const char *token) {
+Telek::Telek(const char *token) {
   m_wifiClient = new WiFiClientSecure;
   m_wifiClient->setCACert(Go_Daddy_G2);
 
@@ -51,17 +51,17 @@ AquaBot::AquaBot(const char *token) {
   m_token = token;
   m_lastUpdateId = 0;
 
-  memset(m_chatId, 0, sizeof(m_chatId));
-  memset(m_apiURL, 0, sizeof(m_apiURL));
+  memset(m_chatId, 0x0, sizeof(m_chatId));
+  memset(m_apiURL, 0x0, sizeof(m_apiURL));
 
   sprintf(m_apiURL, baseApiUrl, m_token, ApiMethods::GETME);
 }
 
-void AquaBot::setMethod(const char *method) {
+void Telek::setMethod(const char *method) {
   sprintf(m_apiURL, baseApiUrl, m_token, method);
 }
 
-String AquaBot::HTTPGet() {
+String Telek::HTTPGet() {
   HTTPClient client;
   String res;
 
@@ -78,7 +78,7 @@ String AquaBot::HTTPGet() {
   return res;
 }
 
-String AquaBot::HTTPPost(const char *payload) {
+String Telek::HTTPPost(const char *payload) {
   HTTPClient client;
   String res;
 
@@ -97,7 +97,7 @@ String AquaBot::HTTPPost(const char *payload) {
   return res;
 }
 
-BotInfo AquaBot::getBotInfo() {
+BotInfo Telek::getBotInfo() {
   BotInfo me = {0};
 
   setMethod(ApiMethods::GETME);
@@ -106,7 +106,7 @@ BotInfo AquaBot::getBotInfo() {
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, res);
   if (err) {
-    AQUA_DEBUG("Json deserialization error: %s\n", err.c_str());
+    AQUA_DEBUG("json deserialization error: %s\n", err.c_str());
     doc.clear();
     return me;
   }
@@ -119,7 +119,7 @@ BotInfo AquaBot::getBotInfo() {
   return me;
 }
 
-void AquaBot::sendMessage(const char *msg) {
+void Telek::sendMessage(const char *msg) {
   if (m_chatId[0] == '\0')
     return;
 
@@ -136,19 +136,19 @@ void AquaBot::sendMessage(const char *msg) {
   String res = HTTPPost(payload);
 
   if (res == EMPTY_RESPONSE || res.isEmpty()) {
-    AQUA_DEBUG("failed to send message, response is empty");
+    AQUA_DEBUG("gagal mengirim pesan");
     return;
   }
 
-  AQUA_DEBUG("message sent successfully");
+  AQUA_DEBUG("pesan berhasil dikirim");
 }
 
-void AquaBot::sendMessage(const char *chatId, const char *msg) {
+void Telek::sendMessage(const char *chatId, const char *msg) {
   setChatId(chatId);
   sendMessage(msg);
 }
 
-bool AquaBot::getMessageUpdate(MessageBody &msgBody) {
+bool Telek::getMessageUpdate(MessageBody &msgBody) {
   setMethod(ApiMethods::GET_UPDATES);
 
   char payload[64] = {0};
@@ -156,7 +156,7 @@ bool AquaBot::getMessageUpdate(MessageBody &msgBody) {
 
   String res = HTTPPost(payload);
   if (res == EMPTY_RESPONSE || res.isEmpty()) {
-    AQUA_DEBUG("empty response from bot api");
+    AQUA_DEBUG("tidak ada response dari API");
     return false;
   }
 
@@ -169,7 +169,6 @@ bool AquaBot::getMessageUpdate(MessageBody &msgBody) {
   }
 
   if (!(doc["result"].size() >= 1)) {
-    AQUA_DEBUG("no result from bot api");
     doc.clear();
     return false;
   }
@@ -179,7 +178,6 @@ bool AquaBot::getMessageUpdate(MessageBody &msgBody) {
   if (update_id > m_lastUpdateId) {
     m_lastUpdateId = update_id;
   } else {
-    AQUA_DEBUG("no new message");
     doc.clear();
     return false;
   }
@@ -197,7 +195,7 @@ bool AquaBot::getMessageUpdate(MessageBody &msgBody) {
   return true;
 }
 
-bool AquaBot::parseCommand(BotCommand &cmd, const char *str) const {
+bool Telek::parseCommand(BotCommand &cmd, const char *str) const {
   if (str == nullptr || str[0] == '\0')
     return false;
 
@@ -220,18 +218,17 @@ bool AquaBot::parseCommand(BotCommand &cmd, const char *str) const {
   return true;
 }
 
-void AquaBot::setChatId(const char *chatId) { strcpy(m_chatId, chatId); }
+void Telek::setChatId(const char *chatId) { strcpy(m_chatId, chatId); }
 
-void AquaBot::setDebugMode() { m_isDebugMode = true; }
+void Telek::setDebugMode() { m_isDebugMode = true; }
 
-void AquaBot::AQUA_DEBUG(const char *str) {
+void Telek::AQUA_DEBUG(const char *str) {
   if (m_isDebugMode) {
     Serial.printf("[AquaBot DEBUG]: %s\n", str);
   }
 }
 
-template <typename... T>
-void AquaBot::AQUA_DEBUG(const char *format, T... args) {
+template <typename... T> void Telek::AQUA_DEBUG(const char *format, T... args) {
   if (m_isDebugMode) {
     char buf[LOG_BUFFER_SIZE] = {0};
     snprintf(buf, sizeof(buf) - 1, format, args...);

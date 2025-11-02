@@ -38,10 +38,10 @@ struct MessageBody {
   }
 };
 
-class AquaBot {
+class Telek {
 public:
-  AquaBot(const char *token);
-  ~AquaBot();
+  explicit Telek(const char *token);
+  ~Telek();
 
   bool parseCommand(BotCommand &cmd, const char *str) const;
   BotInfo getBotInfo();

@@ -1,6 +1,5 @@
-#include <cstring>
+#include <string.h>
 
-#include "AquaBot.h"
 #include "Utils.h"
 
 bool streq(const char *str1, const char *str2) {

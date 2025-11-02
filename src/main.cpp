@@ -1,33 +1,33 @@
+#include <Arduino.h>
+#include <Telek.h>
+#include <Utils.h>
 #include <WiFi.h>
 
-#include "AquaBot.h"
-#include "Utils.h"
 #include "secret.h"
 
 const char *wifi_ssid = WIFI_SSID;
 const char *wifi_password = WIFI_PASSWORD;
-const char *telegram_bot_token = BOT_TOKEN;
 const char *user_id = TELEGRAM_USER_ID;
 
 uint32_t lastMessageUpdate = 0;
 MessageBody msgBody = {0};
 BotCommand cmd = {0};
 
-AquaBot aqua(telegram_bot_token);
+Telek t_client(BOT_TOKEN);
 
 const int LED_PIN = BUILTIN_LED;
 
 namespace Aqua {
-const char WELLCOME_MESSAGE[] = "Hai aku adalah Aqua sebuah bot telegram\
+const char WELCOME_MESSAGE[] = "Hai aku adalah Aqua sebuah bot telegram\
 	yang dapat memberi informasi dan mengontrol smart aquarium kamu.\
 	Untuk perintah selengkapnya kamu bisa kirim perintah /help.";
 const char HELP_MESSAGE[] = "\
-	*Perintah dasar*\n\
+  *Perintah dasar*\n\
 		/start  =>  Untuk menampilkan welcome message\n\
 		/help  =>  Untuk menampilkan daftar perintah atau help message\n\
 	*Control*\n\
-		/led\\_on  =>  Menyalakan lampu led\n\
-		/led\\_off  =>  Mematikan lampu led\n\
+		/led\\\\_on  =>  Menyalakan lampu led\n\
+		/led\\\\_off  =>  Mematikan lampu led\n\
 	*Monitor*\n\
 	"; // pake format markdown biar cakep
 const char *COMMAND_START = "/start";
@@ -53,15 +53,15 @@ void setup() {
     delay(600);
   }
 
-  aqua.setDebugMode();
+  t_client.setDebugMode();
 
-  auto info = aqua.getBotInfo();
+  auto info = t_client.getBotInfo();
 
   Serial.println("\nbot sudah berjalan");
   Serial.printf("nama bot: %s\n", info.username);
 
-  aqua.setChatId(user_id);
-  aqua.sendMessage("Aku idup lagi woyy!!");
+  t_client.setChatId(user_id);
+  t_client.sendMessage("Aku idup lagi woyy!!");
 }
 
 // TODO: simpan update_id pada pesan yang terima dan bandingkan dengan yang
@@ -74,21 +74,23 @@ void loop() {
     // kalau internet nya jelek, method ini (aqua.getMessageUpdate()) bisa makan
     // waktu lebih dari 3 detik yang mana di cycle loop selanjutnya di bagian
     // kondisi cek waktu interval akan langsung terpenuhi
-    if (aqua.getMessageUpdate(msgBody)) {
+    if (t_client.getMessageUpdate(msgBody)) {
       Serial.printf("pesan masuk: @%s: '%s'\n", msgBody.sender,
                     msgBody.message);
 
-      if (aqua.parseCommand(cmd, msgBody.message)) {
+      if (t_client.parseCommand(cmd, msgBody.message)) {
         if (streq(cmd.command, Aqua::COMMAND_LED)) {
           if (streq(cmd.parameter, "on")) {
             digitalWrite(LED_PIN, HIGH);
-            aqua.sendMessage("Dah nyala bos!");
+            t_client.sendMessage("Dah nyala bos!");
           } else {
             digitalWrite(LED_PIN, LOW);
-            aqua.sendMessage("Siap bos!");
+            t_client.sendMessage("Siap bos!");
           }
         } else if (streq(cmd.command, Aqua::COMMAND_HELP)) {
-          aqua.sendMessage(Aqua::HELP_MESSAGE);
+          t_client.sendMessage(Aqua::HELP_MESSAGE);
+        } else if (streq(cmd.command, Aqua::COMMAND_START)) {
+          t_client.sendMessage(Aqua::WELCOME_MESSAGE);
         }
       }
     }
