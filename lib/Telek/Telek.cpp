@@ -52,11 +52,11 @@ Telek::Telek(const char* token)
   m_wifiClient = new WiFiClientSecure;
   m_wifiClient->setCACert(Go_Daddy_G2);
 
-  snprintf(m_baseURL, sizeof(m_baseURL), "%s%s/", BASE_API_URL, m_token);
+  sprintf(m_baseURL, "%s%s/", BASE_API_URL, m_token);
 }
 
 void Telek::setMethod(const char* method) {
-  snprintf(m_fullURL, sizeof(m_fullURL), "%s%s", m_baseURL, method);
+  sprintf(m_fullURL, "%s%s", m_baseURL, method);
 }
 
 String Telek::HTTPGet() {
