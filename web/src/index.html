@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Smart Aquarium Monitoring System" />
+    <title>Smart Aquarium</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="connection-status" id="connection-status">
+        <span class="status-dot"></span>
+        <span class="status-text">Terputus</span>
+      </div>
+
+      <header>
+        <h1>Smart Aquarium</h1>
+      </header>
+
+      <div class="dashboard">
+        <div class="card">
+          <div class="card-icon">🌡️</div>
+          <div class="card-title">Suhu Air</div>
+          <div class="card-value">
+            <span id="temperature">--</span>
+            <span class="card-unit">°C</span>
+          </div>
+          <span class="card-status status-good">Menunggu...</span>
+          <div class="timestamp">
+            <span id="temp-time">--:--:--</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">💧</div>
+          <div class="card-title">Ketinggian Air</div>
+          <div class="card-value">
+            <span id="water-level">--</span>
+            <span class="card-unit">%</span>
+          </div>
+          <span class="card-status status-good">Menunggu...</span>
+          <div class="timestamp">
+            <span id="level-time">--:--:--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <h2>Kontrol</h2>
+        <div class="control-group">
+          <div class="control-item">
+            <span class="control-label">💡 Lampu</span>
+            <label class="switch">
+              <input type="checkbox" id="lamp-switch" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="control-item">
+            <span class="control-label">🫧 Pompa</span>
+            <label class="switch">
+              <input type="checkbox" id="pump-switch" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
