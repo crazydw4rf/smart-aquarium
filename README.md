@@ -2,14 +2,14 @@
 
 Kontrol dan monitor aquarium dengan menggunakan Bot Telegram dan website sebagai visualisasi data yang dimonitor.
 
-## How to build
+## Required Tools
 
-Clone dan buka proyek ini dengan menggunakan VSCode dan pasang ekstensi [PlatformIO IDE](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide).
-Kemudian copy atau rename file `src/secret.example.h` ke `src/secret.h` dan edit file tersebut dengan menyesuaikan data yang ada. Klik tombol build dan upload untuk compile source code dan meng-upload nya ke board esp32.
+- [VSCode code editor](https://code.visualstudio.com/)
+- [PlatformIO extension](https://docs.platformio.org/en/latest/integration/ide/vscode.html)
 
 ## Notes
 
-- Hanya support chip ESP32.
+Proyek ini hanya dibuat dan dikembangkan untuk board [DOIT ESP32 DEVKIT V1](https://www.espboards.dev/esp32/esp32doit-devkit-v1/), untuk dukungan terhadap jenis chip atau board lain, perlu dilakukan modifikasi terhadap sumber kode.
 
 ## Todo
 
