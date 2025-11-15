@@ -6,6 +6,9 @@
 
 #define EMPTY_RESPONSE "{}"
 
+// kalau override value dari macro berikut harus sebelum baris
+// include file header ini
+
 #ifndef MESSAGE_UPDATE_INTERVAL
 #define MESSAGE_UPDATE_INTERVAL 1500
 #endif
@@ -55,7 +58,7 @@ class Telek {
   BotInfo getBotInfo();
   void sendMessage(const char* msg);
   void sendMessage(const char* chatId, const char* msg);
-  bool getMessageUpdate(MessageBody& msgBody);
+  bool getMessageUpdate(MessageBody* msgBody);
 
   void setDebugMode();
   void setChatId(const char* chatId);

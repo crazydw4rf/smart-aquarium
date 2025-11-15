@@ -4,6 +4,8 @@
 #include <Utils.h>
 #include <WiFi.h>
 
+#include <cstring>
+
 #include "handler.h"
 #include "secret.h"
 
@@ -11,16 +13,15 @@
 uint32_t lastMessageUpdate = 0;
 
 // deklarasi struct/class instance
-MessageBody msgBody = {0};
+MessageBody* msgBody = new MessageBody;
 BotCommand botCmd = {0};
 CommandRouter router;
 
 Telek t_client(BOT_TOKEN);
 
 // deklarasi pin
-constexpr uint8_t BASE_RELAY_PIN = 20;
-constexpr uint8_t PUMP_RELAY = BASE_RELAY_PIN;
-constexpr uint8_t LED_RELAY = BASE_RELAY_PIN + 1;
+constexpr uint8_t LED_RELAY = 22;
+constexpr uint8_t PUMP_RELAY = LED_RELAY + 1;
 
 // deklarasi pesan dan perintah yang dikirim
 namespace Aqua {
@@ -42,17 +43,23 @@ constexpr char HELP_MESSAGE[] = R"MSG(*Perintah dasar*
 constexpr char COMMAND_START[] = "/start";
 constexpr char COMMAND_HELP[] = "/help";
 constexpr char COMMAND_LED[] = "/led";
-constexpr char COMMAND_SUHU[] = "/suhu";
-constexpr char COMMAND_TINGGI[] = "/tinggi";
-const char COMMAND_NOCOMMAND = '\0';
+constexpr char COMMAND_PUMP[] = "/pompa";
+constexpr char COMMAND_WATER_TEMP[] = "/suhu";
+constexpr char COMMAND_WATER_LEVEL[] = "/tinggi";
 }  // namespace Aqua
 
 void setup() {
+  memset(msgBody, 0, sizeof(MessageBody));
+
   Serial.begin(115200);
   Serial.print("\n\n\n");
 
-  pinMode(BUILTIN_LED, OUTPUT);
-  digitalWrite(BUILTIN_LED, LOW);
+  pinMode(LED_RELAY, OUTPUT);
+  pinMode(PUMP_RELAY, OUTPUT);
+
+  // kondisi awal relay mati semua
+  digitalWrite(LED_RELAY, HIGH);
+  digitalWrite(PUMP_RELAY, HIGH);
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.printf("mencoba menyambungkan ke jaringan WiFi\nSSID: %s\n",
@@ -74,12 +81,18 @@ void setup() {
   Serial.println("\nbot sudah berjalan");
   Serial.printf("nama bot: %s\n", info.username);
 
-  t_client.setChatId(TELEGRAM_USER_ID);
-  t_client.sendMessage("Aku idup lagi woyy!!");
+  t_client.sendMessage(TELEGRAM_USER_ID, "Aqua Ready!!");
 
   router.registerCommand(Aqua::COMMAND_START, handle_start);
   router.registerCommand(Aqua::COMMAND_HELP, handle_help);
-  router.registerCommand(Aqua::COMMAND_LED, handle_led);
+  router.registerCommand(Aqua::COMMAND_LED, handle_ctrl_led);
+  router.registerCommand(Aqua::COMMAND_PUMP, handle_ctrl_pump);
+  router.registerCommand(Aqua::COMMAND_WATER_TEMP, handle_water_temp);
+  router.registerCommand(Aqua::COMMAND_WATER_LEVEL, handle_water_level);
+
+  // update message id terakhir agar tidak usah merespon
+  // perintah terakhir yang dikirim oleh pengguna
+  t_client.getMessageUpdate(nullptr);
 }
 
 // TODO: simpan update_id pada pesan yang terima dan bandingkan dengan yang
@@ -93,17 +106,19 @@ void loop() {
     // waktu lebih dari 3 detik yang mana di cycle loop selanjutnya di bagian
     // kondisi cek waktu interval akan langsung terpenuhi
     if (t_client.getMessageUpdate(msgBody)) {
-      Serial.printf("pesan masuk: @%s: '%s'\n", msgBody.sender,
-                    msgBody.message);
+      Serial.printf("pesan masuk: @%s: '%s'\n", msgBody->sender,
+                    msgBody->message);
 
-      if (t_client.parseCommand(botCmd, msgBody.message)) {
+      if (t_client.parseCommand(botCmd, msgBody->message)) {
         if (!router.execute(t_client, botCmd)) {
-          Serial.println("Gagal mengeksekusi perintah");
+          Serial.println("gagal mengeksekusi perintah");
         }
       }
     }
     lastMessageUpdate = currentTime;
   }
+
+  // TODO: baca sensor
 
   delay(200);
 }
@@ -116,12 +131,26 @@ void handle_help(Telek& telek, const BotCommand& cmd) {
   telek.sendMessage(Aqua::HELP_MESSAGE);
 }
 
-void handle_led(Telek& telek, const BotCommand& cmd) {
+void handle_ctrl_led(Telek& telek, const BotCommand& cmd) {
   if (streq(cmd.parameter, "on")) {
-    digitalWrite(BUILTIN_LED, HIGH);
-    telek.sendMessage("Dah nyala bos!");
+    digitalWrite(LED_RELAY, LOW);
+    telek.sendMessage("Lampu sudah menyala bos!");
   } else {
-    digitalWrite(BUILTIN_LED, LOW);
+    digitalWrite(LED_RELAY, HIGH);
     telek.sendMessage("Siap bos!");
   }
 }
+
+void handle_ctrl_pump(Telek& telek, const BotCommand& cmd) {
+  if (streq(cmd.parameter, "on")) {
+    digitalWrite(PUMP_RELAY, LOW);
+    telek.sendMessage("Pompa air sudah menyala bos!");
+  } else {
+    digitalWrite(PUMP_RELAY, HIGH);
+    telek.sendMessage("Siap bos!");
+  }
+}
+
+void handle_water_temp(Telek& telek, const BotCommand& cmd) {}
+
+void handle_water_level(Telek& telek, const BotCommand& cmd) {}

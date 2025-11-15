@@ -145,7 +145,7 @@ void Telek::sendMessage(const char* chatId, const char* msg) {
   sendMessage(msg);
 }
 
-bool Telek::getMessageUpdate(MessageBody& msgBody) {
+bool Telek::getMessageUpdate(MessageBody* msgBody) {
   setMethod(ApiMethods::GET_UPDATES);
 
   char payload[64] = {0};
@@ -179,12 +179,19 @@ bool Telek::getMessageUpdate(MessageBody& msgBody) {
     return false;
   }
 
+  // jika parameter yang diberikan sama dengan nullptr
+  // maka hanya update message id terakhir saja
+  if (msgBody == nullptr) {
+    doc.clear();
+    return true;
+  }
+
   JsonObject msg = doc["result"][0]["message"];
 
-  strncpy(msgBody.message, msg["text"].as<const char*>(),
-          sizeof(msgBody.message) - 1);
-  strncpy(msgBody.sender, msg["from"]["username"].as<const char*>(),
-          sizeof(msgBody.sender) - 1);
+  strncpy(msgBody->message, msg["text"].as<const char*>(),
+          sizeof(msgBody->message) - 1);
+  strncpy(msgBody->sender, msg["from"]["username"].as<const char*>(),
+          sizeof(msgBody->sender) - 1);
 
   msg.clear();
   doc.clear();
