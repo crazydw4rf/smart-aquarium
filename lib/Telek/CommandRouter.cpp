@@ -4,9 +4,9 @@
 
 // constructor
 CommandRouter::CommandRouter() : m_handlerCount(0) {
-  m_handlers = new CommandHandler[MAX_COMMAND_HANDLER];
+  m_handlers = new Command[MAX_COMMAND_HANDLER];
 
-  memset(m_handlers, 0, sizeof(CommandHandler) * MAX_COMMAND_HANDLER);
+  memset(m_handlers, 0, sizeof(Command) * MAX_COMMAND_HANDLER);
 }
 
 // destructor
@@ -18,7 +18,7 @@ CommandRouter::~CommandRouter() {
 }
 
 void CommandRouter::registerCommand(const char* command,
-                                    CommandHandlerFunc handler) {
+                                    CommandHandler handler) {
   // TODO: tambahkan pesan log dan method untuk menambahkan max size command
   // handler yang dapat di register
   if (m_handlerCount > MAX_COMMAND_HANDLER) return;

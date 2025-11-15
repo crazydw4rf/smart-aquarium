@@ -2,27 +2,29 @@
 
 #include <Telek.h>
 
+#include <functional>
+
 // TODO: cek kalau max command udah di define dan ada nilainya min 1
 #ifndef MAX_COMMAND_HANDLER
 #define MAX_COMMAND_HANDLER 10
 #endif
 
-typedef void (*CommandHandlerFunc)(Telek& telek, const BotCommand& cmd);
+typedef std::function<void(Telek& telek, const BotCommand& cmd)> CommandHandler;
 
-struct CommandHandler {
+struct Command {
   const char* command;
-  CommandHandlerFunc handler;
+  CommandHandler handler;
 };
 
 class CommandRouter {
  private:
-  CommandHandler* m_handlers;
-  int m_handlerCount;
+  Command* m_handlers;
+  uint8_t m_handlerCount;
 
  public:
   CommandRouter();
   ~CommandRouter();
 
-  void registerCommand(const char* command, CommandHandlerFunc handler);
+  void registerCommand(const char* command, CommandHandler handler);
   bool execute(Telek& telek, const BotCommand& cmd) const;
 };
