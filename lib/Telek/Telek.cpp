@@ -125,8 +125,8 @@ void Telek::sendMessage(const char* msg) {
   // FIXME: buat buffer sendiri untuk message karena jika string message
   // membuat payload melebihi kapasitas buffer, bisa jadi nanti payload atau
   // string nya kepotong dan format json nya jadi nggak valid
-  char payload[PAYLOAD_BUFFER_SIZE] = {0};
-  snprintf(payload, sizeof(payload) - 1,
+  char payload[PAYLOAD_BUFFER_SIZE];
+  snprintf(payload, PAYLOAD_BUFFER_SIZE,
            R"({"chat_id":"%s","text":"%s","parse_mode":"markdown"})", m_chatId,
            msg);
 
@@ -148,8 +148,9 @@ void Telek::sendMessage(const char* chatId, const char* msg) {
 bool Telek::getMessageUpdate(MessageBody* msgBody) {
   setMethod(ApiMethods::GET_UPDATES);
 
-  char payload[64] = {0};
-  strcpy(payload, R"({"limit":1,"offset":-1,"allowed_updates":["message"]})");
+  char payload[64];
+  snprintf(payload, sizeof(payload), "%s",
+           R"({"limit":1,"offset":-1,"allowed_updates":["message"]})");
 
   String res = HTTPPost(payload);
   if (res == EMPTY_RESPONSE || res.isEmpty()) {
@@ -199,22 +200,22 @@ bool Telek::getMessageUpdate(MessageBody* msgBody) {
   return true;
 }
 
-bool Telek::parseCommand(BotCommand& cmd, const char* str) const {
-  if (str == nullptr || str[0] == '\0') return false;
+bool Telek::parseCommand(BotCommand& cmd, const char* message) const {
+  if (message == nullptr || message[0] == '\0') return false;
 
   // slash command terdiri dari dua string yang dipisah dengan character
   // underscore '_' /led_on, /suhu_lapor
 
-  char buf[32] = {0};
-  strncpy(buf, str, sizeof(buf) - 1);
+  char buff[32];
+  snprintf(buff, sizeof(buff), "%s", message);
 
-  char* token = strtok(buf, "_");  // slash command seperti /led, /suhu
+  char* token = strtok(buff, "_");  // slash command seperti /led, /suhu
   if (token != NULL)
     strncpy(cmd.command, token, sizeof(cmd.command) - 1);
   else
     return false;
 
-  token = strtok(NULL, "");  // value atau parameter nya
+  token = strtok(NULL, " ");  // value atau parameter nya
   if (token != NULL) strncpy(cmd.parameter, token, sizeof(cmd.parameter) - 1);
 
   return true;
@@ -233,8 +234,8 @@ void Telek::TELEK_DEBUG(const char* str) {
 template <typename... T>
 void Telek::TELEK_DEBUG(const char* format, T... args) {
   if (m_isDebugMode) {
-    char buf[LOG_BUFFER_SIZE] = {0};
-    snprintf(buf, sizeof(buf) - 1, format, args...);
-    TELEK_DEBUG(buf);
+    char buff[LOG_BUFFER_SIZE];
+    snprintf(buff, LOG_BUFFER_SIZE, format, args...);
+    TELEK_DEBUG(buff);
   }
 }

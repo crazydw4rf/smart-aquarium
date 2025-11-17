@@ -54,7 +54,7 @@ class Telek {
   explicit Telek(const char* token);
   ~Telek();
 
-  bool parseCommand(BotCommand& cmd, const char* str) const;
+  bool parseCommand(BotCommand& cmd, const char* message) const;
   BotInfo getBotInfo();
   void sendMessage(const char* msg);
   void sendMessage(const char* chatId, const char* msg);
