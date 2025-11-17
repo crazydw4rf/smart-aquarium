@@ -115,7 +115,7 @@ void loop() {
         }
       }
     }
-    lastMessageUpdate = currentTime;
+    lastMessageUpdate = millis();
   }
 
   // TODO: baca sensor
