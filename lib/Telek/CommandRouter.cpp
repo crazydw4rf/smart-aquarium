@@ -19,8 +19,6 @@ CommandRouter::~CommandRouter() {
 
 void CommandRouter::registerCommand(const char* command,
                                     CommandHandler handler) {
-  // TODO: tambahkan pesan log dan method untuk menambahkan max size command
-  // handler yang dapat di register
   if (m_handlerCount > MAX_COMMAND_HANDLER) return;
 
   // menambah command handler ke array m_handlers

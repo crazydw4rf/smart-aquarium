@@ -32,38 +32,38 @@ LPAvTK33sefOT6jEm0pUBsV/fdUID+Ic/n4XuKxe9tQWskMJDE32p2u0mYRlynqI
 -----END CERTIFICATE-----
 )CERT";
 
-namespace ApiMethods {
+namespace ApiMethod {
 constexpr char GETME[] = "getMe";
 constexpr char SEND_MESSAGE[] = "sendMessage";
 constexpr char GET_UPDATES[] = "getUpdates";
-}  // namespace ApiMethods
+}  // namespace ApiMethod
 
 // destructor
 Telek::~Telek() {
-  if (m_wifiClient != nullptr) {
-    delete m_wifiClient;
-    m_wifiClient = nullptr;
+  if (m_WiFiClient != nullptr) {
+    delete m_WiFiClient;
+    m_WiFiClient = nullptr;
   }
 }
 
 // constructor
 Telek::Telek(const char* token)
     : m_token(token), m_isDebugMode(false), m_lastUpdateId(0), m_chatId("") {
-  m_wifiClient = new WiFiClientSecure;
-  m_wifiClient->setCACert(Go_Daddy_G2);
-
-  sprintf(m_baseURL, "%s%s/", BASE_API_URL, m_token);
+  m_WiFiClient = new WiFiClientSecure;
+  m_WiFiClient->setCACert(Go_Daddy_G2);
 }
 
-void Telek::setMethod(const char* method) {
-  sprintf(m_fullURL, "%s%s", m_baseURL, method);
+String Telek::buildURL(const char* apiMethod) {
+  return String(BASE_API_URL) + m_token + "/" + apiMethod;
 }
 
-String Telek::HTTPGet() {
+String Telek::HTTPGet(const char* apiMethod) {
   HTTPClient client;
   String res;
 
-  client.begin(*m_wifiClient, m_fullURL);
+  String url = buildURL(apiMethod);
+
+  client.begin(*m_WiFiClient, url.c_str());
 
   int code = client.GET();
   if (!(code >= 200 && code < 400))
@@ -76,11 +76,13 @@ String Telek::HTTPGet() {
   return res;
 }
 
-String Telek::HTTPPost(const char* payload) {
+String Telek::HTTPPost(const char* apiMethod, const char* payload) {
   HTTPClient client;
   String res;
 
-  client.begin(*m_wifiClient, m_fullURL);
+  String url = buildURL(apiMethod);
+
+  client.begin(*m_WiFiClient, url.c_str());
   client.addHeader("Content-Type", "application/json");
 
   int code = client.POST(payload);
@@ -98,8 +100,7 @@ String Telek::HTTPPost(const char* payload) {
 BotInfo Telek::getBotInfo() {
   BotInfo me = {0};
 
-  setMethod(ApiMethods::GETME);
-  String res = HTTPGet();
+  String res = HTTPGet(ApiMethod::GETME);
 
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, res);
@@ -118,19 +119,19 @@ BotInfo Telek::getBotInfo() {
 }
 
 void Telek::sendMessage(const char* msg) {
-  if (m_chatId[0] == '\0') return;
+  if (strlen(msg) < 1) return;
 
-  setMethod(ApiMethods::SEND_MESSAGE);
+  const size_t payload_size = MESSAGE_BUFFER_SIZE + 64;
 
-  // FIXME: buat buffer sendiri untuk message karena jika string message
-  // membuat payload melebihi kapasitas buffer, bisa jadi nanti payload atau
-  // string nya kepotong dan format json nya jadi nggak valid
-  char payload[PAYLOAD_BUFFER_SIZE];
-  snprintf(payload, PAYLOAD_BUFFER_SIZE,
+  char message[MESSAGE_BUFFER_SIZE];
+  snprintf(message, MESSAGE_BUFFER_SIZE, "%s", msg);
+
+  char payload[payload_size];
+  snprintf(payload, payload_size,
            R"({"chat_id":"%s","text":"%s","parse_mode":"markdown"})", m_chatId,
-           msg);
+           message);
 
-  String res = HTTPPost(payload);
+  String res = HTTPPost(ApiMethod::SEND_MESSAGE, payload);
 
   if (res == EMPTY_RESPONSE || res.isEmpty()) {
     TELEK_DEBUG("gagal mengirim pesan");
@@ -146,13 +147,11 @@ void Telek::sendMessage(const char* chatId, const char* msg) {
 }
 
 bool Telek::getMessageUpdate(MessageBody* msgBody) {
-  setMethod(ApiMethods::GET_UPDATES);
-
   char payload[64];
   snprintf(payload, sizeof(payload), "%s",
            R"({"limit":1,"offset":-1,"allowed_updates":["message"]})");
 
-  String res = HTTPPost(payload);
+  String res = HTTPPost(ApiMethod::GET_UPDATES, payload);
   if (res == EMPTY_RESPONSE || res.isEmpty()) {
     TELEK_DEBUG("tidak ada response dari API");
     return false;

@@ -4,9 +4,10 @@
 
 #include <functional>
 
-// TODO: cek kalau max command udah di define dan ada nilainya min 1
 #ifndef MAX_COMMAND_HANDLER
 #define MAX_COMMAND_HANDLER 10
+#elif MAX_COMMAND_HANDLER < 1
+#error "MAX_COMMAND_HANDLER cannot be less than 1"
 #endif
 
 typedef std::function<void(Telek& telek, const BotCommand& cmd)> CommandHandler;

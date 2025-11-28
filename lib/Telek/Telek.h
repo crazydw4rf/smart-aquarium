@@ -9,16 +9,12 @@
 // kalau override value dari macro berikut harus sebelum baris
 // include file header ini
 
-#ifndef MESSAGE_UPDATE_INTERVAL
-#define MESSAGE_UPDATE_INTERVAL 1500
-#endif
-
 #ifndef LOG_BUFFER_SIZE
 #define LOG_BUFFER_SIZE 512
 #endif
 
-#ifndef PAYLOAD_BUFFER_SIZE
-#define PAYLOAD_BUFFER_SIZE 512
+#ifndef MESSAGE_BUFFER_SIZE
+#define MESSAGE_BUFFER_SIZE 512
 #endif
 
 #ifndef BOT_MESSAGE_POLLING_TIMEOUT
@@ -41,12 +37,10 @@ struct MessageBody {
 
 class Telek {
  private:
-  WiFiClientSecure* m_wifiClient;
+  WiFiClientSecure* m_WiFiClient;
 
   const char* m_token;
   bool m_isDebugMode;
-  char m_baseURL[80];
-  char m_fullURL[128];
   char m_chatId[12];
   uint32_t m_lastUpdateId;
 
@@ -64,9 +58,9 @@ class Telek {
   void setChatId(const char* chatId);
 
  private:
-  String HTTPGet();
-  String HTTPPost(const char* payload);
-  void setMethod(const char* method);
+  String HTTPGet(const char* apiMethod);
+  String HTTPPost(const char* apiMethod, const char* payload);
+  String buildURL(const char* apiMethod);
   void TELEK_DEBUG(const char* str);
 
   template <typename... T>
