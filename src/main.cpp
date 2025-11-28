@@ -6,8 +6,6 @@
 #include <Utils.h>
 #include <WiFi.h>
 
-#include <cstring>
-
 #include "handler.h"
 #include "secret.h"
 
