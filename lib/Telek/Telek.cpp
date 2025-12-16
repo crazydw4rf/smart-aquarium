@@ -233,7 +233,7 @@ bool Telek::getMessageUpdate(MessageBody* msgBody) {
 }
 
 bool Telek::parseCommand(BotCommand& cmd, const char* message) const {
-  if (message == nullptr || message[0] == '\0') return false;
+  if (!message || !message[0]) return false;
 
   // slash command terdiri dari dua string yang dipisah dengan character
   // underscore '_' /led_on, /suhu_lapor
