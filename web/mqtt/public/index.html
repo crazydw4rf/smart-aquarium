@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Smart Aquarium Monitoring System" />
+    <title>Smart Aquarium</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="status-badge" id="connection-status">Terputus</div>
+
+      <h1>Data Sensor</h1>
+      <div class="sensor-list">
+        <div class="sensor-item">
+          <span class="label">Suhu Air</span>
+          <span class="value" id="temperature">--</span>
+          <span class="unit">°C</span>
+        </div>
+        <div class="sensor-item">
+          <span class="label">Ketinggian Air</span>
+          <span class="value" id="water-level">--</span>
+          <span class="unit">%</span>
+        </div>
+      </div>
+
+      <h1>Kontrol</h1>
+      <div class="control-list">
+        <div class="control-item">
+          <span class="label">Lampu</span>
+          <span class="status" id="lamp-status">MATI</span>
+          <label class="switch">
+            <input type="checkbox" id="lamp-switch" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="control-item">
+          <span class="label">Pompa</span>
+          <span class="status" id="pump-status">MATI</span>
+          <label class="switch">
+            <input type="checkbox" id="pump-switch" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

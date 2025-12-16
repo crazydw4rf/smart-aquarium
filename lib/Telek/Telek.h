@@ -6,21 +6,6 @@
 
 #define EMPTY_RESPONSE "{}"
 
-// kalau override value dari macro berikut harus sebelum baris
-// include file header ini
-
-#ifndef LOG_BUFFER_SIZE
-#define LOG_BUFFER_SIZE 512
-#endif
-
-#ifndef MESSAGE_BUFFER_SIZE
-#define MESSAGE_BUFFER_SIZE 512
-#endif
-
-#ifndef BOT_MESSAGE_POLLING_TIMEOUT
-#define BOT_MESSAGE_POLLING_TIMEOUT 60
-#endif
-
 struct BotInfo {
   char username[20];
 };
@@ -37,12 +22,10 @@ struct MessageBody {
 
 class Telek {
  private:
-  WiFiClientSecure* m_WiFiClient;
-
   const char* m_token;
-  bool m_isDebugMode;
-  char m_chatId[12];
   uint32_t m_lastUpdateId;
+  char m_chatId[12];
+  WiFiClientSecure* m_WiFiClient;
 
  public:
   explicit Telek(const char* token);
@@ -50,19 +33,22 @@ class Telek {
 
   bool parseCommand(BotCommand& cmd, const char* message) const;
   BotInfo getBotInfo();
-  void sendMessage(const char* msg);
-  void sendMessage(const char* chatId, const char* msg);
+  void sendMessage(const String& msg);
+  void sendMessage(const char* chatId, const String& msg);
   bool getMessageUpdate(MessageBody* msgBody);
 
-  void setDebugMode();
   void setChatId(const char* chatId);
 
  private:
   String HTTPGet(const char* apiMethod);
-  String HTTPPost(const char* apiMethod, const char* payload);
+  String HTTPPost(const char* apiMethod, const String& payload);
   String buildURL(const char* apiMethod);
-  void TELEK_DEBUG(const char* str);
-
-  template <typename... T>
-  void TELEK_DEBUG(const char* format, T... args);
 };
+
+inline void Telek::setChatId(const char* chatId) {
+  strncpy(m_chatId, chatId, sizeof(m_chatId) - 1);
+}
+
+inline String Telek::buildURL(const char* apiMethod) {
+  return String(BASE_API_URL) + m_token + "/" + apiMethod;
+}

@@ -1,0 +1,16 @@
+#pragma once
+
+#ifdef ESP32
+// ADC1_6
+#define WATER_LEVEL_SIGNAL_PIN 34
+#define WATER_LEVEL_POWER_PIN 13
+#define ONEWIRE_BUS_PIN_1 15
+#define LED_RELAY 22
+#define PUMP_RELAY 23
+#else  // ESP8266
+#define WATER_LEVEL_SIGNAL_PIN A0
+#define WATER_LEVEL_POWER_PIN D2
+#define ONEWIRE_BUS_PIN_1 D5
+#define LED_RELAY D0
+#define PUMP_RELAY D1
+#endif

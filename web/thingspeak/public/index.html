@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aquarium Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="title">Smart Aquarium Control Panel</div>
+    
+    <div class="container">
+      <h1>Relay Control</h1>
+
+      <div class="control-list">
+        <div class="control-item">
+          <span class="label">LED</span>
+          <span class="status" id="led-status">OFF</span>
+          <button id="led-btn" onclick="toggleLED()"><i class="fa-solid fa-circle"></i></button>
+        </div>
+
+        <div class="control-item">
+          <span class="label">Pompa</span>
+          <span class="status" id="pump-status">MATI</span>
+          <button id="pump-btn" onclick="togglePump()"><i class="fa-solid fa-circle"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -13,4 +13,4 @@ Proyek ini hanya dibuat dan dikembangkan untuk board [DOIT ESP32 DEVKIT V1](http
 
 ## Todo
 
-- [ ] Support chip ESP8266
+- [x] Support chip ESP8266

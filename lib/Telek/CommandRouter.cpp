@@ -2,39 +2,23 @@
 
 #include <Utils.h>
 
-// constructor
-CommandRouter::CommandRouter() : m_handlerCount(0) {
-  m_handlers = new Command[MAX_COMMAND_HANDLER];
+#include <stdexcept>
+#include <string>
 
-  memset(m_handlers, 0, sizeof(Command) * MAX_COMMAND_HANDLER);
-}
+// constructor
+CommandRouter::CommandRouter() {}
+
+CommandRouter::CommandRouter(const CommandMap& handlers)
+    : m_handlers(handlers) {}
 
 // destructor
-CommandRouter::~CommandRouter() {
-  if (m_handlers != nullptr) {
-    delete[] m_handlers;
-    m_handlers = nullptr;
+CommandRouter::~CommandRouter() {}
+
+bool CommandRouter::dispatch(Telek& telek, const BotCommand& cmd) const {
+  try {
+    m_handlers.at(cmd.command)(telek, cmd);
+    return true;
+  } catch (const std::out_of_range& e) {
+    return false;
   }
-}
-
-void CommandRouter::registerCommand(const char* command,
-                                    CommandHandler handler) {
-  if (m_handlerCount > MAX_COMMAND_HANDLER) return;
-
-  // menambah command handler ke array m_handlers
-  m_handlers[m_handlerCount].command = command;
-  m_handlers[m_handlerCount].handler = handler;
-
-  m_handlerCount++;
-}
-
-bool CommandRouter::execute(Telek& telek, const BotCommand& cmd) const {
-  for (int i = 0; i < m_handlerCount; i++) {
-    if (streq(cmd.command, m_handlers[i].command)) {
-      m_handlers[i].handler(telek, cmd);
-      return true;
-    }
-  }
-
-  return false;
 }

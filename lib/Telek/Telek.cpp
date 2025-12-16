@@ -1,12 +1,44 @@
-#include "Telek.h"
-
 #include <ArduinoJson.h>
+#ifdef ESP32
 #include <HTTPClient.h>
 #include <WiFi.h>
+#else
+#include <ESP8266HTTPClient.h>
+#include <ESP8266WiFi.h>
+#endif
+#include <Utils.h>
 #include <WiFiClientSecure.h>
 
+#include "Telek.h"
+
+// Log macros for ESP8266
+#ifndef ESP32
+#ifdef DEBUG_LOG_ENABLE
+#define log_d(fmt, ...)                \
+  do {                                 \
+    Serial.print("[DEBUG] > ");        \
+    Serial.printf(fmt, ##__VA_ARGS__); \
+    Serial.println();                  \
+  } while (0)
+#else
+#define log_d(...)
+#endif
+#define log_e(fmt, ...)                \
+  do {                                 \
+    Serial.print("[ERROR] > ");        \
+    Serial.printf(fmt, ##__VA_ARGS__); \
+    Serial.println();                  \
+  } while (0)
+#define log_i(fmt, ...)                \
+  do {                                 \
+    Serial.print("[INFO] > ");         \
+    Serial.printf(fmt, ##__VA_ARGS__); \
+    Serial.println();                  \
+  } while (0)
+#endif
+
 // root CA untuk domain telegram bot API api.telegram.org
-constexpr char Go_Daddy_G2[] = R"CERT(
+const char Go_Daddy_G2_Cert[] = R"CERT(
 -----BEGIN CERTIFICATE-----
 MIIDxTCCAq2gAwIBAgIBADANBgkqhkiG9w0BAQsFADCBgzELMAkGA1UEBhMCVVMx
 EDAOBgNVBAgTB0FyaXpvbmExEzARBgNVBAcTClNjb3R0c2RhbGUxGjAYBgNVBAoT
@@ -32,10 +64,14 @@ LPAvTK33sefOT6jEm0pUBsV/fdUID+Ic/n4XuKxe9tQWskMJDE32p2u0mYRlynqI
 -----END CERTIFICATE-----
 )CERT";
 
+#ifdef ESP8266
+X509List cert(Go_Daddy_G2_Cert);
+#endif
+
 namespace ApiMethod {
-constexpr char GETME[] = "getMe";
-constexpr char SEND_MESSAGE[] = "sendMessage";
-constexpr char GET_UPDATES[] = "getUpdates";
+const char GETME[] = "getMe";
+const char SEND_MESSAGE[] = "sendMessage";
+const char GET_UPDATES[] = "getUpdates";
 }  // namespace ApiMethod
 
 // destructor
@@ -48,13 +84,14 @@ Telek::~Telek() {
 
 // constructor
 Telek::Telek(const char* token)
-    : m_token(token), m_isDebugMode(false), m_lastUpdateId(0), m_chatId("") {
+    : m_token(token), m_lastUpdateId(0), m_chatId{0} {
   m_WiFiClient = new WiFiClientSecure;
-  m_WiFiClient->setCACert(Go_Daddy_G2);
-}
-
-String Telek::buildURL(const char* apiMethod) {
-  return String(BASE_API_URL) + m_token + "/" + apiMethod;
+#ifdef ESP32
+  m_WiFiClient->setCACert(Go_Daddy_G2_Cert);
+#else
+  m_WiFiClient->setInsecure();
+  // m_WiFiClient->setTrustAnchors(&cert);
+#endif
 }
 
 String Telek::HTTPGet(const char* apiMethod) {
@@ -63,7 +100,7 @@ String Telek::HTTPGet(const char* apiMethod) {
 
   String url = buildURL(apiMethod);
 
-  client.begin(*m_WiFiClient, url.c_str());
+  client.begin(*m_WiFiClient, url);
 
   int code = client.GET();
   if (!(code >= 200 && code < 400))
@@ -76,13 +113,13 @@ String Telek::HTTPGet(const char* apiMethod) {
   return res;
 }
 
-String Telek::HTTPPost(const char* apiMethod, const char* payload) {
+String Telek::HTTPPost(const char* apiMethod, const String& payload) {
   HTTPClient client;
   String res;
 
   String url = buildURL(apiMethod);
 
-  client.begin(*m_WiFiClient, url.c_str());
+  client.begin(*m_WiFiClient, url);
   client.addHeader("Content-Type", "application/json");
 
   int code = client.POST(payload);
@@ -102,99 +139,95 @@ BotInfo Telek::getBotInfo() {
 
   String res = HTTPGet(ApiMethod::GETME);
 
+  if (res == EMPTY_RESPONSE || res.isEmpty()) return me;
+
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, res);
   if (err) {
-    TELEK_DEBUG("json deserialization error: %s\n", err.c_str());
-    doc.clear();
+    log_e("json deserialization error: %s", err.c_str());
     return me;
   }
 
-  strncpy(me.username, doc["result"]["username"].as<const char*>(),
-          sizeof(me.username) - 1);
+  JsonObjectConst result = doc["result"];
 
-  doc.clear();
+  if (result.isNull()) return me;
+
+  strncpy(me.username, result["username"].as<const char*>(),
+          sizeof(me.username) - 1);
 
   return me;
 }
 
-void Telek::sendMessage(const char* msg) {
-  if (strlen(msg) < 1) return;
+void Telek::sendMessage(const String& msg) {
+  if (msg.length() < 1) return;
 
-  const size_t payload_size = MESSAGE_BUFFER_SIZE + 64;
+  String message;
+  JsonDocument doc;
+  doc["chat_id"] = m_chatId;
+  doc["text"] = msg;
+  doc["parse_mode"] = "markdown";
 
-  char message[MESSAGE_BUFFER_SIZE];
-  snprintf(message, MESSAGE_BUFFER_SIZE, "%s", msg);
+  serializeJson(doc, message);
 
-  char payload[payload_size];
-  snprintf(payload, payload_size,
-           R"({"chat_id":"%s","text":"%s","parse_mode":"markdown"})", m_chatId,
-           message);
+  log_d("message payload: %s", message.c_str());
 
-  String res = HTTPPost(ApiMethod::SEND_MESSAGE, payload);
+  String res = HTTPPost(ApiMethod::SEND_MESSAGE, message);
 
   if (res == EMPTY_RESPONSE || res.isEmpty()) {
-    TELEK_DEBUG("gagal mengirim pesan");
+    log_e("gagal mengirim pesan");
     return;
   }
 
-  TELEK_DEBUG("pesan berhasil dikirim");
+  log_i("pesan berhasil dikirim");
 }
 
-void Telek::sendMessage(const char* chatId, const char* msg) {
+void Telek::sendMessage(const char* chatId, const String& msg) {
   setChatId(chatId);
   sendMessage(msg);
 }
 
 bool Telek::getMessageUpdate(MessageBody* msgBody) {
-  char payload[64];
-  snprintf(payload, sizeof(payload), "%s",
-           R"({"limit":1,"offset":-1,"allowed_updates":["message"]})");
-
-  String res = HTTPPost(ApiMethod::GET_UPDATES, payload);
+  String res =
+      HTTPPost(ApiMethod::GET_UPDATES,
+               R"({"limit":1,"offset":-1,"allowed_updates":["message"]})");
   if (res == EMPTY_RESPONSE || res.isEmpty()) {
-    TELEK_DEBUG("tidak ada response dari API");
+    log_e("tidak ada response dari API");
     return false;
   }
 
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, res);
   if (err) {
-    TELEK_DEBUG("json deserialization error: %s\n", err.c_str());
-    doc.clear();
+    log_e("json deserialization error: %s\n", err.c_str());
     return false;
   }
 
-  if (!(doc["result"].size() >= 1)) {
-    doc.clear();
-    return false;
-  }
+  JsonArrayConst result = doc["result"];
+  if (!(result && result.size() > 0)) return false;
+
+  JsonObjectConst first = result[0];
+
+  // mencegah pengguna lain untuk memakai bot
+  auto userId = first["from"]["id"].as<const char*>();
+  if (userId && !streq(userId, m_chatId)) return false;
 
   // mencegah agar hanya pesan terakhir dan baru dikirm yang akan diproses
-  auto update_id = doc["result"][0]["update_id"].as<uint32_t>();
+  auto update_id = first["update_id"].as<uint32_t>();
   if (update_id > m_lastUpdateId) {
     m_lastUpdateId = update_id;
   } else {
-    doc.clear();
     return false;
   }
 
   // jika parameter yang diberikan sama dengan nullptr
   // maka hanya update message id terakhir saja
-  if (msgBody == nullptr) {
-    doc.clear();
-    return true;
-  }
+  if (msgBody == nullptr) return false;
 
-  JsonObject msg = doc["result"][0]["message"];
-
+  JsonObjectConst msg = first["message"];
   strncpy(msgBody->message, msg["text"].as<const char*>(),
           sizeof(msgBody->message) - 1);
   strncpy(msgBody->sender, msg["from"]["username"].as<const char*>(),
           sizeof(msgBody->sender) - 1);
-
-  msg.clear();
-  doc.clear();
 
   return true;
 }
@@ -218,23 +251,4 @@ bool Telek::parseCommand(BotCommand& cmd, const char* message) const {
   if (token != NULL) strncpy(cmd.parameter, token, sizeof(cmd.parameter) - 1);
 
   return true;
-}
-
-void Telek::setChatId(const char* chatId) { strcpy(m_chatId, chatId); }
-
-void Telek::setDebugMode() { m_isDebugMode = true; }
-
-void Telek::TELEK_DEBUG(const char* str) {
-  if (m_isDebugMode) {
-    Serial.printf("[Telek]: %s\n", str);
-  }
-}
-
-template <typename... T>
-void Telek::TELEK_DEBUG(const char* format, T... args) {
-  if (m_isDebugMode) {
-    char buff[LOG_BUFFER_SIZE];
-    snprintf(buff, LOG_BUFFER_SIZE, format, args...);
-    TELEK_DEBUG(buff);
-  }
 }

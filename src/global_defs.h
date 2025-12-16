@@ -1,5 +1,0 @@
-#pragma once
-
-#define MESSAGE_BUFFER_SIZE 1024
-#define LOG_BUFFER_SIZE 1024
-#define MAX_COMMAND_HANDLER 6

@@ -1,0 +1,14 @@
+{
+  "name": "smart-aquarium-thingspeak",
+  "version": "1.0.0",
+  "description": "Web interface untuk kontrol relay via ThingSpeak",
+  "main": "server.js",
+  "scripts": {
+    "start": "bun run server.js",
+    "dev": "bun --watch server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  }
+}
