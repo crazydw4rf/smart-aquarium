@@ -38,6 +38,7 @@
 
 #define MESSAGE_UPDATE_INTERVAL 2000
 #define SENSOR_UPDATE_INTERVAL 3000
+#define SENSOR_REPORT_INTERVAL 60 * 1000 * 5
 
 // deklarasi konstanta rentang nilai sensor yang aman
 const float WATER_TEMP_SAFE_MIN = 28;  // derajat celcius
@@ -91,11 +92,13 @@ const char COMMAND_STATUS[] = "/status";      // /status_control, /status_sensor
 #ifdef ESP32
 TaskHandle_t messageUpdaterHandle = NULL;
 TaskHandle_t sensorUpdaterHandle = NULL;
+TaskHandle_t sensorReporterHandle = NULL;
 void task_sensorUpdater(void*);
 void task_messageUpdater(void*);
+void task_sensorReporter(void*);
 #endif
 
-// deklarasi command handler untuk telegram
+// deklarasi command handler untuk perintah bot telegram
 void handle_start(Telek& telek, const BotCommand& cmd);
 void handle_help(Telek& telek, const BotCommand& cmd);
 void handle_ctrl_led(Telek& telek, const BotCommand& cmd);
@@ -103,6 +106,8 @@ void handle_ctrl_pump(Telek& telek, const BotCommand& cmd);
 void handle_water_monitor(Telek& telek, const BotCommand& cmd);
 void handle_status(Telek& telek, const BotCommand& cmd);
 
+// map untuk menyimpan perintah bot dan fungsi yang menjalankan perintah
+// tersebut
 CommandMap commandHandlers{
     {Aqua::COMMAND_START, handle_start},
     {Aqua::COMMAND_HELP, handle_help},
@@ -152,6 +157,8 @@ void setup() {
                           &sensorUpdaterHandle, 1);
   xTaskCreatePinnedToCore(task_messageUpdater, "messageUpdater", 8192, NULL, 1,
                           &messageUpdaterHandle, 1);
+  xTaskCreatePinnedToCore(task_sensorReporter, "sensorReporter", 4096, NULL, 1,
+                          &sensorReporterHandle, 1);
 #endif
 }
 
@@ -187,6 +194,30 @@ void messageUpdate() {
   }
 }
 
+bool sensorReport() {
+  bool hasWarning = false;
+  if (waterTemp < WATER_TEMP_SAFE_MIN) {
+    String msg = "Peringatan: Suhu air di bawah batas aman!: ";
+    msg += String(waterTemp, 2) + "°C";
+    botClient.sendMessage(msg.c_str());
+    hasWarning = true;
+  } else if (waterTemp > WATER_TEMP_SAFE_MAX) {
+    String msg = "Peringatan: Suhu air di atas batas aman!: ";
+    msg += String(waterTemp, 2) + "°C";
+    botClient.sendMessage(msg.c_str());
+    hasWarning = true;
+  }
+
+  if (waterLevel < WATER_LEVEL_SAFE_MIN) {
+    String msg = "Peringatan: Tinggi air di bawah batas aman!: ";
+    msg += String(waterLevel, 2) + "%";
+    botClient.sendMessage(msg.c_str());
+    hasWarning = true;
+  }
+
+  return hasWarning;
+}
+
 #ifdef ESP32
 void loop() { delay(1000); }
 
@@ -203,10 +234,23 @@ void task_messageUpdater(void*) {
     vTaskDelay(MESSAGE_UPDATE_INTERVAL / portTICK_PERIOD_MS);
   }
 }
+
+void task_sensorReporter(void*) {
+  static uint32_t lastReport = 0;
+  while (true) {
+    if (lastReport < 1 || millis() - lastReport >= SENSOR_REPORT_INTERVAL) {
+      if (sensorReport()) {
+        lastReport = millis();
+      }
+    }
+    vTaskDelay(5000 / portTICK_PERIOD_MS);  // Check every 5 seconds
+  }
+}
 #else
 void loop() {
   static uint32_t lastMessageUpdate = 0;
   static uint32_t lastSensorUpdate = 0;
+  static uint32_t lastSensorReport = 0;
 
   if (millis() - lastMessageUpdate >= MESSAGE_UPDATE_INTERVAL) {
     messageUpdate();
@@ -216,6 +260,13 @@ void loop() {
   if (millis() - lastSensorUpdate >= SENSOR_UPDATE_INTERVAL) {
     sensorUpdate();
     lastSensorUpdate = millis();
+  }
+
+  if (lastSensorReport < 1 ||
+      millis() - lastSensorReport >= SENSOR_REPORT_INTERVAL) {
+    if (sensorReport()) {
+      lastSensorReport = millis();
+    }
   }
 
   delay(20);
