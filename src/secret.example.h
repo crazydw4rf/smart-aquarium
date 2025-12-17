@@ -6,4 +6,8 @@
 
 #define MQTT_USER "user"
 #define MQTT_PASSWORD "user123"
-#define MQTT_SERVER "mqtt.xyz.com"
+#define MQTT_HOST "broker.hivemq.com"
+#define MQTT_PORT 1883
+
+#define THINGSPEAK_CHANNEL_ID 12345678
+#define THINGSPEAK_API_KEY "QWERTYUIOP"
